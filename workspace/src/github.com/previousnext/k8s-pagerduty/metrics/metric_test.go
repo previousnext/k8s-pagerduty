@@ -23,25 +23,39 @@ func TestStore(t *testing.T) {
 
 	err = store.Add(100)
 	assert.Nil(t, err)
-	assert.Equal(t, 33, store.Avg())
+	_, err = store.Avg()
+	if assert.NotNil(t, err) {
+		assert.Equal(t, "second data point does not contain data (or zero value)", err.Error())
+	}
 
 	err = store.Add(100)
 	assert.Nil(t, err)
-	assert.Equal(t, 66, store.Avg())
+	_, err = store.Avg()
+	if assert.NotNil(t, err) {
+		assert.Equal(t, "third data point does not contain data (or zero value)", err.Error())
+	}
 
 	err = store.Add(100)
 	assert.Nil(t, err)
-	assert.Equal(t, 100, store.Avg())
+	avg, err := store.Avg()
+	assert.Nil(t, err)
+	assert.Equal(t, 100, avg)
 
 	err = store.Add(20)
 	assert.Nil(t, err)
-	assert.Equal(t, 73, store.Avg())
+	avg, err = store.Avg()
+	assert.Nil(t, err)
+	assert.Equal(t, 73, avg)
 
 	err = store.Add(30)
 	assert.Nil(t, err)
-	assert.Equal(t, 50, store.Avg())
+	avg, err = store.Avg()
+	assert.Nil(t, err)
+	assert.Equal(t, 50, avg)
 
 	err = store.Add(50)
 	assert.Nil(t, err)
-	assert.Equal(t, 33, store.Avg())
+	avg, err = store.Avg()
+	assert.Nil(t, err)
+	assert.Equal(t, 33, avg)
 }
