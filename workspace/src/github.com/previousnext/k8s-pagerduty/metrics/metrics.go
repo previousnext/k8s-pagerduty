@@ -5,29 +5,33 @@ import (
 	"time"
 )
 
-type MetricsList struct {
+// List is a collection of metrics.
+type List struct {
 	Items map[string]*Metrics
 }
 
+// Metrics are a collection container metrics.
 type Metrics struct {
 	LastUpdate time.Time
 	CPU        *Store
 	Memory     *Store
 }
 
-func New() MetricsList {
+// New returns a new metrics list with garage collection enabled.
+func New() List {
 	// Initialise our storage.
-	list := MetricsList{
+	list := List{
 		Items: make(map[string]*Metrics),
 	}
 
 	// Startup a GC background task.
-	go list.GarbageCollection()
+	go list.garbageCollection()
 
 	return list
 }
 
-func (m MetricsList) GarbageCollection() {
+// Helper function to run garbage collection.
+func (m List) garbageCollection() {
 	go func() {
 		limiter := time.Tick(time.Minute)
 
@@ -43,7 +47,8 @@ func (m MetricsList) GarbageCollection() {
 	}()
 }
 
-func (m MetricsList) Add(key string, cpu, memory int) error {
+// Add stores new data points to the metric store object.
+func (m List) Add(key string, cpu, memory int) error {
 	// Ensure that this object exists in our store first.
 	metric := getMetric(m, key)
 
@@ -64,7 +69,8 @@ func (m MetricsList) Add(key string, cpu, memory int) error {
 	return nil
 }
 
-func getMetric(list MetricsList, key string) *Metrics {
+// Helper function to return an initialized metrics object.
+func getMetric(list List, key string) *Metrics {
 	if val, ok := list.Items[key]; ok {
 		return val
 	}
@@ -76,17 +82,19 @@ func getMetric(list MetricsList, key string) *Metrics {
 	}
 }
 
-func (m MetricsList) AvgCPU(key string) (int, error) {
+// AvgCPU returns the average CPU for a container.
+func (m List) AvgCPU(key string) (int, error) {
 	if val, ok := m.Items[key]; ok {
-		return val.CPU.Avg(), nil
+		return val.CPU.Avg()
 	}
 
 	return 0, fmt.Errorf("cannot find metric with key: %s", key)
 }
 
-func (m MetricsList) AvgMemory(key string) (int, error) {
+// AvgMemory returns the average memory for a container.
+func (m List) AvgMemory(key string) (int, error) {
 	if val, ok := m.Items[key]; ok {
-		return val.Memory.Avg(), nil
+		return val.Memory.Avg()
 	}
 
 	return 0, fmt.Errorf("cannot find metric with key: %s", key)

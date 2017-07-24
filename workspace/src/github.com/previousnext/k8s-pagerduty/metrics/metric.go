@@ -2,12 +2,14 @@ package metrics
 
 import "fmt"
 
+// Store contains metric data over 3 data points.
 type Store struct {
 	first  int
 	second int
 	third  int
 }
 
+// Add is used to add a new data point to the store.
 func (m *Store) Add(val int) error {
 	// Ensure that this value is within the range of 0 to 100.
 	if val > 100 {
@@ -26,6 +28,19 @@ func (m *Store) Add(val int) error {
 	return nil
 }
 
-func (m *Store) Avg() int {
-	return (m.first + m.second + m.third) / 3
+// Avg is used to provide an average value over a dataset.
+func (m *Store) Avg() (int, error) {
+	if m.first == 0 {
+		return m.first, fmt.Errorf("first data point does not contain data (or zero value)")
+	}
+
+	if m.second == 0 {
+		return m.first, fmt.Errorf("second data point does not contain data (or zero value)")
+	}
+
+	if m.third == 0 {
+		return m.first, fmt.Errorf("third data point does not contain data (or zero value)")
+	}
+
+	return (m.first + m.second + m.third) / 3, nil
 }
