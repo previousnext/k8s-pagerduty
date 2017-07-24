@@ -1,0 +1,30 @@
+apiVersion: extensions/v1beta1
+kind: DaemonSet
+metadata:
+  name: pagerduty
+spec:
+  template:
+    metadata:
+      labels:
+        app: pagerduty
+    spec:
+      containers:
+      - name: pagerduty
+        image: previousnext/k8s-pagerduty:0.0.1
+        env:
+          - name: SERVICE_KEY
+            value: "XXXXXXXXXXXXXXXXXXXXXX"
+        volumeMounts:
+        - name: docker
+          mountPath: /var/run/docker.sock
+        resources:
+          limits:
+            cpu: 5m
+            memory: 25Mi
+          requests:
+            cpu: 5m
+            memory: 25M
+      volumes:
+      - name: docker
+        hostPath:
+          path: /var/run/docker.sock
