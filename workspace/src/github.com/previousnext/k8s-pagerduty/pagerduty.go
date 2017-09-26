@@ -1,14 +1,15 @@
 package main
 
 import (
-	"log"
-
 	"github.com/PagerDuty/go-pagerduty"
+	log "github.com/Sirupsen/logrus"
 	"github.com/cenkalti/backoff"
 )
 
 func pagerdutyEvent(action, serviceKey, indicentKey, description string) (*pagerduty.EventResponse, error) {
 	ticker := backoff.NewTicker(backoff.NewExponentialBackOff())
+
+	log.Infof("PagerDuty %s incident - %s", action, description)
 
 	var (
 		resp *pagerduty.EventResponse
@@ -23,7 +24,7 @@ func pagerdutyEvent(action, serviceKey, indicentKey, description string) (*pager
 			Description: description,
 		})
 		if err != nil {
-			log.Printf("Failed to retrieve org members, retrying: %s", err)
+			log.Infof("Failed to retrieve org members, retrying: %s", err)
 			continue
 		}
 
