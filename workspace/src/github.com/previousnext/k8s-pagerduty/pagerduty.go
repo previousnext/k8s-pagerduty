@@ -24,7 +24,7 @@ func pagerdutyEvent(action, serviceKey, indicentKey, description string) (*pager
 			Description: description,
 		})
 		if err != nil {
-			log.Infof("Failed to retrieve org members, retrying: %s", err)
+			log.Infof("Failed to create PagerDuty event, retrying: %s", err)
 			continue
 		}
 
