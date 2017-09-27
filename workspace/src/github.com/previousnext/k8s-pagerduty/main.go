@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"regexp"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/previousnext/k8s-pagerduty/metrics"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -20,10 +22,16 @@ var (
 	cliServiceKey       = kingpin.Flag("service", "PagerDuty service key used for triggers").Default("").OverrideDefaultFromEnvar("SERVICE_KEY").String()
 	cliThresholdCPU     = kingpin.Flag("threshold-cpu", "Threshold to determine if an application is using too much CPU").Default("95").OverrideDefaultFromEnvar("THRESHOLD_CPU").Int()
 	cliThresholdMemory  = kingpin.Flag("threshold-memory", "Threshold to determine if an application is using too much memory").OverrideDefaultFromEnvar("THRESHOLD_MEMORY").Default("95").Int()
+	cliPrometheusPort   = kingpin.Flag("prometheus-port", "Prometheus metrics port").Default(":9000").OverrideDefaultFromEnvar("METRICS_PORT").String()
+	cliPrometheusPath   = kingpin.Flag("prometheus-path", "Prometheus metrics path").Default("/metrics").OverrideDefaultFromEnvar("METRICS_PATH").String()
 )
 
 func main() {
 	kingpin.Parse()
+
+	fmt.Println("Starting Prometheus Endpoint")
+
+	go prometheus(*cliPrometheusPort, *cliPrometheusPath)
 
 	fmt.Println("Starting PagerDuty Notifier")
 
@@ -128,12 +136,12 @@ func main() {
 
 				// Compare the current CPU metric and the previous memory metric vs threshold.
 				if avgCPU > *cliThresholdCPU {
-					err := pagerdutyEvent("trigger", *cliServiceKey, key, fmt.Sprintf("CPU load GREATER than %v (%v) for container %s", *cliThresholdCPU, cpu, key))
+					_, err := pagerdutyEvent("trigger", *cliServiceKey, key, fmt.Sprintf("CPU load GREATER than %v (%v) for container %s", *cliThresholdCPU, cpu, key))
 					if err != nil {
 						panic(err)
 					}
 				} else {
-					err := pagerdutyEvent("resolve", *cliServiceKey, key, fmt.Sprintf("CPU load LESS than %v (%v) for container %s", *cliThresholdCPU, cpu, key))
+					_, err := pagerdutyEvent("resolve", *cliServiceKey, key, fmt.Sprintf("CPU load LESS than %v (%v) for container %s", *cliThresholdCPU, cpu, key))
 					if err != nil {
 						panic(err)
 					}
@@ -141,12 +149,12 @@ func main() {
 
 				// Compare the current memory metric and the previous memory metric vs threshold.
 				if avgMemory > *cliThresholdMemory {
-					err := pagerdutyEvent("trigger", *cliServiceKey, key, fmt.Sprintf("Memory usage GREATER than %v (%v) for container %s", *cliThresholdMemory, cpu, key))
+					_, err := pagerdutyEvent("trigger", *cliServiceKey, key, fmt.Sprintf("Memory usage GREATER than %v (%v) for container %s", *cliThresholdMemory, cpu, key))
 					if err != nil {
 						panic(err)
 					}
 				} else {
-					err := pagerdutyEvent("resolve", *cliServiceKey, key, fmt.Sprintf("Memory usage LESS than %v (%v) for container %s", *cliThresholdMemory, cpu, key))
+					_, err := pagerdutyEvent("resolve", *cliServiceKey, key, fmt.Sprintf("Memory usage LESS than %v (%v) for container %s", *cliThresholdMemory, cpu, key))
 					if err != nil {
 						panic(err)
 					}
@@ -154,4 +162,10 @@ func main() {
 			}
 		}
 	}
+}
+
+// Helper function for serving Prometheus metrics.
+func prometheus(port, path string) {
+	http.Handle(path, promhttp.Handler())
+	log.Fatal(http.ListenAndServe(port, nil))
 }
